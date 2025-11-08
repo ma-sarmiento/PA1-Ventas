@@ -39,7 +39,9 @@ El sistema permite gestionar las ventas de una tienda de electrodomésticos util
 
 ## 🧪 Estado del Proyecto
 
+
 Este código fue funcional y aprobado en su momento. Fue revisado para su publicación en GitHub con fines académicos y de portafolio personal.  
+
 ---
 
 
