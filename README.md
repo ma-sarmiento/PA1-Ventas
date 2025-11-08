@@ -49,8 +49,11 @@ Este código fue funcional y aprobado en su momento. Fue revisado para su public
 ## 📁 Archivos incluidos
 
 -`main.cpp`: Código fuente principal.
+
 -`funciones.cpp`: Funciones auxiliares.
+
 -`README.md`: Este documento.
+
 -`.gitignore`: Archivos y carpetas ignoradas por Git para mantener limpio el repositorio.
 
 ---
