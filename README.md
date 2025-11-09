@@ -31,8 +31,8 @@ El sistema permite gestionar las ventas de una tienda de electrodomésticos util
 ├── CMakeLists.txt
 ├── main.cpp
 ├── README.md
-├── productos.txt         ✅ (entrada opcional)
-├── clientes.txt          ✅ (entrada opcional)
+├── productos.txt         
+├── clientes.txt          
 
 ```
 
