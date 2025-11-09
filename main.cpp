@@ -89,7 +89,19 @@ void registrarProducto() {
     cout << "\n--- Registro de Producto ---\n";
     cout << "Codigo: ";
     cin >> p.codigo;
-    cin.ignore(); // Limpiar buffer
+    cin.ignore();  // limpiar buffer
+
+    // Verificar si ya existe
+    ifstream archivoExistente("productos.dat", ios::binary);
+    Producto temp;
+    while (archivoExistente.read(reinterpret_cast<char*>(&temp), sizeof(Producto))) {
+        if (temp.codigo == p.codigo) {
+            cout << "El producto con código " << p.codigo << " ya existe.\n";
+            archivoExistente.close();
+            return;
+        }
+    }
+    archivoExistente.close();
 
     cout << "Nombre: ";
     cin.getline(p.nombre, 30);
@@ -100,18 +112,27 @@ void registrarProducto() {
     cout << "Valor unitario: ";
     cin >> p.valor;
 
-    // Abrir archivo binario
-    ofstream archivo("productos.dat", ios::binary | ios::app);
-    if (!archivo) {
-        cerr << "Error al abrir el archivo de productos.\n";
+    // Guardar en productos.dat (binario)
+    ofstream archivoBin("productos.dat", ios::binary | ios::app);
+    if (!archivoBin) {
+        cerr << "Error al abrir productos.dat\n";
         return;
     }
+    archivoBin.write(reinterpret_cast<char*>(&p), sizeof(Producto));
+    archivoBin.close();
 
-    archivo.write(reinterpret_cast<char*>(&p), sizeof(Producto));
-    archivo.close();
+    // Guardar en productos.txt (texto plano)
+    ofstream archivoTxt("productos.txt", ios::app);
+    if (!archivoTxt) {
+        cerr << "Error al abrir productos.txt\n";
+        return;
+    }
+    archivoTxt << p.codigo << ";" << p.nombre << ";" << fixed << setprecision(0) << p.valor << ";" << p.cantidad << "\n";
+    archivoTxt.close();
 
-    cout << "Producto registrado exitosamente.\n";
+    cout << "Producto registrado exitosamente en productos.dat y productos.txt\n";
 }
+
 // Función para consultar un producto por su código
 void consultarProducto() {
     int codigoBuscado;
