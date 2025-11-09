@@ -16,6 +16,10 @@ struct Venta {
     int cantidadVendida;
     float valorTotal;
 };
+
+// Declaración del prototipo
+void registrarProducto();
+
 int main() {
     int opcion;
     bool continuar = true;
@@ -32,7 +36,7 @@ int main() {
 
         switch (opcion) {
             case 1:
-                // registrarProducto();
+                registrarProducto();
                 break;
             case 2:
                 // consultarProducto();
@@ -52,4 +56,35 @@ int main() {
     }
 
     return 0;
+}
+
+// Función para registrar un nuevo producto
+void registrarProducto() {
+    Producto p;
+
+    cout << "\n--- Registro de Producto ---\n";
+    cout << "Codigo: ";
+    cin >> p.codigo;
+    cin.ignore(); // Limpiar buffer
+
+    cout << "Nombre: ";
+    cin.getline(p.nombre, 30);
+
+    cout << "Cantidad en inventario: ";
+    cin >> p.cantidad;
+
+    cout << "Valor unitario: ";
+    cin >> p.valor;
+
+    // Abrir archivo binario
+    ofstream archivo("productos.dat", ios::binary | ios::app);
+    if (!archivo) {
+        cerr << "Error al abrir el archivo de productos.\n";
+        return;
+    }
+
+    archivo.write(reinterpret_cast<char*>(&p), sizeof(Producto));
+    archivo.close();
+
+    cout << "Producto registrado exitosamente.\n";
 }
