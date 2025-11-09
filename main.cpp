@@ -35,6 +35,7 @@ void registrarVenta();
 bool actualizarProducto(const Producto&);
 void cargarProductosDesdeArchivo();
 void cargarClientesDesdeArchivo();
+void registrarCliente();
 
 int main() {
     int opcion;
@@ -45,10 +46,11 @@ int main() {
         cout << "1. Registrar producto\n";
         cout << "2. Cargar productos desde archivo\n";
         cout << "3. Consultar producto\n";
-        cout << "4. Cargar clientes desde archivo\n";
-        cout << "5. Generar reporte\n";
-        cout << "6. Registrar venta\n";
-        cout << "7. Salir\n";
+        cout << "4. Registrar cliente\n";
+        cout << "5. Cargar clientes desde archivo\n";
+        cout << "6. Generar reporte\n";
+        cout << "7. Registrar venta\n";
+        cout << "8. Salir\n";
         cout << "Seleccione una opcion: ";
         cin >> opcion;
 
@@ -63,15 +65,18 @@ int main() {
                 consultarProducto();
                 break;
             case 4:
-                cargarClientesDesdeArchivo();
+                registrarCliente();
                 break;
             case 5:
-                generarReporte();
+                cargarClientesDesdeArchivo();
                 break;
             case 6:
-                registrarVenta();
+                generarReporte();
                 break;
             case 7:
+                registrarVenta();
+                break;
+            case 8:
                 continuar = false;
                 break;
             default:
@@ -396,4 +401,62 @@ void cargarClientesDesdeArchivo() {
     archivoBin.close();
 
     cout << "Clientes cargados exitosamente desde clientes.txt\n";
+}
+void registrarCliente() {
+    Cliente c;
+    cout << "\n--- Registro de Cliente ---\n";
+
+    cout << "Tipo de identificacion (C o E): ";
+    cin >> c.tipoId;
+
+    cout << "Numero de documento: ";
+    cin >> c.documento;
+
+    // Verificar si ya existe el cliente
+    ifstream archivoBin("clientes.dat", ios::binary);
+    if (archivoBin) {
+        Cliente temp;
+        while (archivoBin.read(reinterpret_cast<char*>(&temp), sizeof(Cliente))) {
+            if (temp.documento == c.documento) {
+                cout << "El cliente con ese documento ya existe.\n";
+                archivoBin.close();
+                return;
+            }
+        }
+        archivoBin.close();
+    }
+
+    cin.ignore();
+    cout << "Nombre: ";
+    cin.getline(c.nombre, 30);
+
+    cout << "Apellido: ";
+    cin.getline(c.apellido, 30);
+
+    cout << "Direccion: ";
+    cin.getline(c.direccion, 50);
+
+    // Guardar en archivo binario
+    ofstream archivoBinOut("clientes.dat", ios::binary | ios::app);
+    if (!archivoBinOut) {
+        cerr << "Error al abrir clientes.dat para escritura.\n";
+        return;
+    }
+    archivoBinOut.write(reinterpret_cast<char*>(&c), sizeof(Cliente));
+    archivoBinOut.close();
+
+    // Guardar en archivo de texto
+    ofstream archivoTxt("clientes.txt", ios::app);
+    if (!archivoTxt) {
+        cerr << "Error al abrir clientes.txt para escritura.\n";
+        return;
+    }
+    archivoTxt << c.tipoId << ';'
+               << c.documento << ';'
+               << c.nombre << ';'
+               << c.apellido << ';'
+               << c.direccion << '\n';
+    archivoTxt.close();
+
+    cout << "Cliente registrado exitosamente.\n";
 }
