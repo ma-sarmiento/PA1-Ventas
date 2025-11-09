@@ -37,6 +37,7 @@ void cargarProductosDesdeArchivo();
 void cargarClientesDesdeArchivo();
 void registrarCliente();
 void buscarProductoPorNombre();
+void buscarClientePorNombreApellido();
 
 int main() {
     int opcion;
@@ -50,9 +51,10 @@ int main() {
         cout << "4. Buscar producto por nombre\n";
         cout << "5. Registrar cliente\n";
         cout << "6. Cargar clientes desde archivo\n";
-        cout << "7. Generar reporte\n";
-        cout << "8. Registrar venta\n";
-        cout << "9. Salir\n";
+        cout << "7. Buscar cliente por nombre/apellido\n";
+        cout << "8. Generar reporte\n";
+        cout << "9. Registrar venta\n";
+        cout << "10. Salir\n";
         cout << "Seleccione una opcion: ";
         cin >> opcion;
 
@@ -76,12 +78,15 @@ int main() {
                 cargarClientesDesdeArchivo();
                 break;
             case 7:
-                generarReporte();
+                buscarClientePorNombreApellido();
                 break;
             case 8:
-                registrarVenta();
+                generarReporte();
                 break;
             case 9:
+                registrarVenta();
+                break;
+            case 10:
                 continuar = false;
                 break;
             default:
@@ -500,4 +505,48 @@ void buscarProductoPorNombre() {
     if (!encontrado) {
         cout << "No se encontraron productos que coincidan con \"" << criterio << "\".\n";
     }
+}
+// Función para buscar clientes por subcadena en nombre o apellido
+void buscarClientePorNombreApellido() {
+    ifstream archivo("clientes.dat", ios::binary);
+    if (!archivo) {
+        cerr << "Error al abrir clientes.dat.\n";
+        return;
+    }
+
+    Cliente c;
+    string termino;
+    bool encontrado = false;
+
+    cin.ignore(); // Limpiar buffer
+    cout << "\nBuscar cliente\n";
+    cout << "Ingrese nombre o apellido (o parte): ";
+    getline(cin, termino);
+
+    // Convertir término a minúsculas para comparación insensible a mayúsculas
+    for (char &ch : termino) ch = tolower(ch);
+
+    cout << "\nResultados encontrados:\n";
+
+    while (archivo.read(reinterpret_cast<char*>(&c), sizeof(Cliente))) {
+        string nombreCompleto = string(c.nombre) + " " + string(c.apellido);
+        string nombreMinuscula = nombreCompleto;
+        for (char &ch : nombreMinuscula) ch = tolower(ch);
+
+        if (nombreMinuscula.find(termino) != string::npos) {
+            cout << "---------------------------\n";
+            cout << "Tipo ID: " << c.tipoId << endl;
+            cout << "Documento: " << c.documento << endl;
+            cout << "Nombre: " << c.nombre << endl;
+            cout << "Apellido: " << c.apellido << endl;
+            cout << "Direccion: " << c.direccion << endl;
+            encontrado = true;
+        }
+    }
+
+    if (!encontrado) {
+        cout << "No se encontraron coincidencias.\n";
+    }
+
+    archivo.close();
 }
