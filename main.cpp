@@ -38,6 +38,7 @@ void registrarCliente();
 void buscarProductoPorNombre();
 void buscarClientePorNombreApellido();
 void realizarCompra();
+void modificarCompra();
 
 int main() {
     int opcion;
@@ -54,7 +55,8 @@ int main() {
         cout << "7. Buscar cliente por nombre/apellido\n";
         cout << "8. Generar reporte\n";
         cout << "9. Realizar Compra\n";
-        cout << "10. Salir\n";
+        cout << "10. Modificar Compra\n";
+        cout << "11. Salir\n";
         cout << "Seleccione una opcion: ";
         cin >> opcion;
 
@@ -87,6 +89,9 @@ int main() {
                 realizarCompra();
                 break;
             case 10:
+                modificarCompra();
+                break;
+            case 11:
                 continuar = false;
                 break;
             default:
@@ -615,4 +620,136 @@ void buscarClientePorNombreApellido() {
     }
 
     archivo.close();
+}
+void modificarCompra() {
+    int ordenBuscada;
+    cout << "\n--- MODIFICAR COMPRA ---\n";
+    cout << "Ingrese el numero de orden a modificar: ";
+    cin >> ordenBuscada;
+
+    ifstream archivoIn("ordenes.dat", ios::binary);
+    ofstream archivoTemp("ordenes_temp.dat", ios::binary);
+
+    if (!archivoIn || !archivoTemp) {
+        cerr << "Error al abrir archivos.\n";
+        return;
+    }
+
+    bool ordenEncontrada = false;
+
+    while (!archivoIn.eof()) {
+        int numeroOrden;
+        Cliente cliente;
+        Producto productos[5];
+        int cantidades[5];
+        float totales[5];
+        float totalOrden;
+
+        // Leer número de orden
+        archivoIn.read(reinterpret_cast<char*>(&numeroOrden), sizeof(int));
+        if (archivoIn.eof()) break;  // Evita leer basura final
+
+        // Leer cliente
+        archivoIn.read(reinterpret_cast<char*>(&cliente), sizeof(Cliente));
+
+        // Leer productos (hasta 5)
+        int contador = 0;
+        streampos inicioProductos = archivoIn.tellg();
+
+        while (contador < 5) {
+            Producto prod;
+            int cantidad;
+            float totalProd;
+
+            archivoIn.read(reinterpret_cast<char*>(&prod), sizeof(Producto));
+            archivoIn.read(reinterpret_cast<char*>(&cantidad), sizeof(int));
+            archivoIn.read(reinterpret_cast<char*>(&totalProd), sizeof(float));
+
+            if (archivoIn.fail()) break;
+
+            productos[contador] = prod;
+            cantidades[contador] = cantidad;
+            totales[contador] = totalProd;
+            contador++;
+        }
+
+        // Leer total de la orden
+        archivoIn.read(reinterpret_cast<char*>(&totalOrden), sizeof(float));
+
+        // Si no es la orden buscada, copiarla tal cual
+        if (numeroOrden != ordenBuscada) {
+            archivoTemp.write(reinterpret_cast<char*>(&numeroOrden), sizeof(int));
+            archivoTemp.write(reinterpret_cast<char*>(&cliente), sizeof(Cliente));
+            for (int i = 0; i < contador; i++) {
+                archivoTemp.write(reinterpret_cast<char*>(&productos[i]), sizeof(Producto));
+                archivoTemp.write(reinterpret_cast<char*>(&cantidades[i]), sizeof(int));
+                archivoTemp.write(reinterpret_cast<char*>(&totales[i]), sizeof(float));
+            }
+            archivoTemp.write(reinterpret_cast<char*>(&totalOrden), sizeof(float));
+            continue;
+        }
+
+        // Si es la orden buscada:
+        ordenEncontrada = true;
+        cout << "\nOrden encontrada. Cliente: " << cliente.nombre << " " << cliente.apellido << "\n";
+        float nuevoTotalOrden = 0;
+
+        for (int i = 0; i < contador; i++) {
+            cout << "\nProducto: " << productos[i].nombre << "\n";
+            cout << "Cantidad actual: " << cantidades[i] << "\n";
+            cout << "Ingrese nueva cantidad: ";
+            int nuevaCantidad;
+            cin >> nuevaCantidad;
+
+            cantidades[i] = nuevaCantidad;
+
+            // Recalcular política de descuento
+            float subtotal = productos[i].valor * nuevaCantidad;
+            float descuento = 0;
+            float seguro = 0;
+            float iva = 0.19f * subtotal;
+
+            if (productos[i].valor >= 500000 && productos[i].valor <= 1000000) seguro = 30000;
+            else if (productos[i].valor <= 5000000) seguro = 120000;
+            else seguro = 170000;
+            seguro *= nuevaCantidad;
+
+            if (nuevaCantidad >= 6 && nuevaCantidad <= 10) descuento = 0.05f;
+            else if (nuevaCantidad >= 11 && nuevaCantidad <= 15) descuento = 0.10f;
+            else if (nuevaCantidad > 15) descuento = 0.15f;
+
+            subtotal -= subtotal * descuento;
+
+            if (cliente.tipoId == 'E' && productos[i].valor <= 2000000 && nuevaCantidad < 5) {
+                iva = 0;
+            }
+
+            float nuevoTotalProducto = subtotal + seguro + iva;
+            totales[i] = nuevoTotalProducto;
+            nuevoTotalOrden += nuevoTotalProducto;
+        }
+
+        // Escribir orden modificada en archivo temporal
+        archivoTemp.write(reinterpret_cast<char*>(&numeroOrden), sizeof(int));
+        archivoTemp.write(reinterpret_cast<char*>(&cliente), sizeof(Cliente));
+        for (int i = 0; i < contador; i++) {
+            archivoTemp.write(reinterpret_cast<char*>(&productos[i]), sizeof(Producto));
+            archivoTemp.write(reinterpret_cast<char*>(&cantidades[i]), sizeof(int));
+            archivoTemp.write(reinterpret_cast<char*>(&totales[i]), sizeof(float));
+        }
+        archivoTemp.write(reinterpret_cast<char*>(&nuevoTotalOrden), sizeof(float));
+
+        cout << "\nOrden modificada exitosamente. Nuevo total: $" << fixed << setprecision(2) << nuevoTotalOrden << "\n";
+    }
+
+    archivoIn.close();
+    archivoTemp.close();
+
+    // Reemplazar el archivo original
+    remove("ordenes.dat");
+    rename("ordenes_temp.dat", "ordenes.dat");
+
+    if (!ordenEncontrada) {
+        cout << "No se encontro ninguna orden con ese numero.\n";
+    }
 }
