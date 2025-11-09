@@ -22,6 +22,9 @@ struct Venta {
 void registrarProducto();
 void consultarProducto();
 void generarReporte();
+void registrarVenta();
+bool actualizarProducto(const Producto&);
+
 
 int main() {
     int opcion;
@@ -48,7 +51,7 @@ int main() {
                 generarReporte();
                 break;
             case 4:
-                // registrarVenta();
+                registrarVenta();
                 break;
             case 5:
                 continuar = false;
@@ -127,7 +130,6 @@ void consultarProducto() {
         cout << "Producto no encontrado.\n";
     }
 }
-#include <iomanip> // Ya deberías tener esto
 
 void generarReporte() {
     Producto p;
@@ -157,6 +159,93 @@ void generarReporte() {
     if (!hayDatos) {
         cout << "No hay productos registrados.\n";
     }
+}
+// Reemplaza un producto existente por uno actualizado
+bool actualizarProducto(const Producto& productoActualizado) {
+    fstream archivo("productos.dat", ios::in | ios::out | ios::binary);
+    if (!archivo) {
+        cerr << "Error al abrir productos.dat para actualizar.\n";
+        return false;
+    }
+
+    Producto temp;
+    while (archivo.read(reinterpret_cast<char*>(&temp), sizeof(Producto))) {
+        if (temp.codigo == productoActualizado.codigo) {
+            // Retrocede el puntero para sobrescribir
+            archivo.seekp(-static_cast<int>(sizeof(Producto)), ios::cur);
+            archivo.write(reinterpret_cast<const char*>(&productoActualizado), sizeof(Producto));
+            archivo.close();
+            return true;
+        }
+    }
+
+    archivo.close();
+    return false; // No se encontró el producto
+}
+// Función para registrar una venta
+void registrarVenta() {
+    int codigo;
+    int cantidadVenta;
+    Producto p;
+    bool encontrado = false;
+
+    cout << "\n--- Registrar Venta ---\n";
+    cout << "Ingrese el codigo del producto: ";
+    cin >> codigo;
+
+    // Abrimos archivo para lectura
+    fstream archivo("productos.dat", ios::in | ios::binary);
+    if (!archivo) {
+        cerr << "Error al abrir productos.dat.\n";
+        return;
+    }
+
+    // Buscar el producto
+    while (archivo.read(reinterpret_cast<char*>(&p), sizeof(Producto))) {
+        if (p.codigo == codigo) {
+            encontrado = true;
+            break;
+        }
+    }
+    archivo.close();
+
+    if (!encontrado) {
+        cout << "Producto no encontrado.\n";
+        return;
+    }
+
+    cout << "Cantidad disponible: " << p.cantidad << endl;
+    cout << "Ingrese cantidad a vender: ";
+    cin >> cantidadVenta;
+
+    if (cantidadVenta > p.cantidad) {
+        cout << "No hay suficiente inventario.\n";
+        return;
+    }
+
+    // Actualizar inventario
+    p.cantidad -= cantidadVenta;
+    if (!actualizarProducto(p)) {
+        cout << "Error actualizando el producto.\n";
+        return;
+    }
+
+    // Registrar venta en archivo ventas.dat
+    Venta v;
+    v.codigoProducto = p.codigo;
+    v.cantidadVendida = cantidadVenta;
+    v.valorTotal = cantidadVenta * p.valor;
+
+    ofstream ventasFile("ventas.dat", ios::binary | ios::app);
+    if (!ventasFile) {
+        cerr << "Error al abrir ventas.dat.\n";
+        return;
+    }
+
+    ventasFile.write(reinterpret_cast<char*>(&v), sizeof(Venta));
+    ventasFile.close();
+
+    cout << " Venta registrada. Total: $" << fixed << setprecision(2) << v.valorTotal << "\n";
 }
 
 
