@@ -1,0 +1,10 @@
+C;1029384756;Juan;Pérez;Cra 45 #23-10
+E;987654321;Sarah;Connor;Av. Internacional 12-40
+C;1156432879;Carlos;Gómez;Calle 34 #56-21
+C;1098765432;Laura;Martínez;Transv 5 #12A-45
+E;1234567890;Anna;Smith;Calle 10 #101
+C;1032456789;Pedro;Rojas;Cra 8 #20-22
+E;1122334455;Marie;Dubois;Av. Francia 90-10
+C;1082937465;Luis;Mejía;Calle 50 #9-30
+C;1000000001;Lucía;Ortega;Carrera 60 #17-18
+E;9988776655;Takeshi;Yamamoto;Shibuya #55

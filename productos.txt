@@ -1,0 +1,11 @@
+101;Televisor Samsung 50";1800000;15
+102;Lavadora LG Turbo;1350000;8
+103;Microondas Haceb;500000;20
+104;Aire Acondicionado Challenger;2200000;5
+105;Estufa Haceb 4 puestos;980000;9
+106;Horno Electrico Oster;750000;12
+107;Batidora de Mano Imusa;220000;18
+108;Campana Extractora Whirlpool;650000;6
+109;Licuadora Oster 12 velocidades;350000;14
+110;Congelador Horizontal Challenger;2500000;4
+
