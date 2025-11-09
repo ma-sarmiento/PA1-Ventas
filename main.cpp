@@ -36,6 +36,7 @@ bool actualizarProducto(const Producto&);
 void cargarProductosDesdeArchivo();
 void cargarClientesDesdeArchivo();
 void registrarCliente();
+void buscarProductoPorNombre();
 
 int main() {
     int opcion;
@@ -46,11 +47,12 @@ int main() {
         cout << "1. Registrar producto\n";
         cout << "2. Cargar productos desde archivo\n";
         cout << "3. Consultar producto\n";
-        cout << "4. Registrar cliente\n";
-        cout << "5. Cargar clientes desde archivo\n";
-        cout << "6. Generar reporte\n";
-        cout << "7. Registrar venta\n";
-        cout << "8. Salir\n";
+        cout << "4. Buscar producto por nombre\n";
+        cout << "5. Registrar cliente\n";
+        cout << "6. Cargar clientes desde archivo\n";
+        cout << "7. Generar reporte\n";
+        cout << "8. Registrar venta\n";
+        cout << "9. Salir\n";
         cout << "Seleccione una opcion: ";
         cin >> opcion;
 
@@ -65,18 +67,21 @@ int main() {
                 consultarProducto();
                 break;
             case 4:
-                registrarCliente();
+                buscarProductoPorNombre();
                 break;
             case 5:
-                cargarClientesDesdeArchivo();
+                registrarCliente();
                 break;
             case 6:
-                generarReporte();
+                cargarClientesDesdeArchivo();
                 break;
             case 7:
-                registrarVenta();
+                generarReporte();
                 break;
             case 8:
+                registrarVenta();
+                break;
+            case 9:
                 continuar = false;
                 break;
             default:
@@ -459,4 +464,40 @@ void registrarCliente() {
     archivoTxt.close();
 
     cout << "Cliente registrado exitosamente.\n";
+}
+void buscarProductoPorNombre() {
+    char criterio[30];
+    Producto p;
+    bool encontrado = false;
+
+    cout << "\n--- Buscar Producto por Nombre ---\n";
+    cout << "Ingrese parte del nombre a buscar: ";
+    cin.ignore();
+    cin.getline(criterio, 30);
+
+    ifstream archivo("productos.dat", ios::binary);
+    if (!archivo) {
+        cerr << "Error al abrir productos.dat.\n";
+        return;
+    }
+
+    cout << left << setw(10) << "Codigo"
+         << setw(30) << "Nombre"
+         << setw(15) << "Precio Unitario" << endl;
+    cout << string(55, '-') << endl;
+
+    while (archivo.read(reinterpret_cast<char*>(&p), sizeof(Producto))) {
+        if (strstr(p.nombre, criterio) != nullptr) {
+            cout << left << setw(10) << p.codigo
+                 << setw(30) << p.nombre
+                 << "$" << fixed << setprecision(0) << p.valor << endl;
+            encontrado = true;
+        }
+    }
+
+    archivo.close();
+
+    if (!encontrado) {
+        cout << "No se encontraron productos que coincidan con \"" << criterio << "\".\n";
+    }
 }
