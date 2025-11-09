@@ -64,16 +64,18 @@ Este código fue funcional y aprobado en su momento. Fue revisado para su public
    ```bash
    git clone https://github.com/ma-sarmiento/PA1-Ventas.git
    cd PA1-Ventas
+Requiere tener instalado un compilador compatible con C++, como g++ (MinGW para Windows).
 
 2. Compila el archivo fuente con un compilador C++:
    
    ```bash
-   g++ -std=c++11 main.cpp funciones.cpp -o ElectroVentas
+   g++ -std=c++11 main.cpp -o ElectroVentas
 
 3. Ejecuta el programa:
    
    ```bash
-   ./ElectroVentas
+   ElectroVentas.exe en Windows
+   ./ElectroVentas en linux/MacOs
 
   💡 También puedes abrirlo directamente desde CLion o cualquier otro IDE de tu preferencia para C++ y compilar con un solo clic.
 
