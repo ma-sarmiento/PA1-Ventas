@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <iomanip>
 using namespace std;
 
 // Estructura para representar un producto
@@ -19,6 +20,7 @@ struct Venta {
 
 // Declaración del prototipo
 void registrarProducto();
+void consultarProducto();
 
 int main() {
     int opcion;
@@ -39,7 +41,7 @@ int main() {
                 registrarProducto();
                 break;
             case 2:
-                // consultarProducto();
+                consultarProducto();
                 break;
             case 3:
                 // generarReporte();
@@ -88,3 +90,40 @@ void registrarProducto() {
 
     cout << "Producto registrado exitosamente.\n";
 }
+// Función para consultar un producto por su código
+void consultarProducto() {
+    int codigoBuscado;
+    Producto p;
+    bool encontrado = false;
+
+    cout << "\n--- Consulta de Producto ---\n";
+    cout << "Ingrese el codigo del producto: ";
+    cin >> codigoBuscado;
+
+    ifstream archivo("productos.dat", ios::binary);
+    if (!archivo) {
+        cerr << "Error al abrir el archivo de productos.\n";
+        return;
+    }
+
+    while (archivo.read(reinterpret_cast<char*>(&p), sizeof(Producto))) {
+        if (p.codigo == codigoBuscado) {
+            cout << "\nProducto encontrado:\n";
+            cout << "Codigo: " << p.codigo << endl;
+            cout << "Nombre: " << p.nombre << endl;
+            cout << "Cantidad disponible: " << p.cantidad << endl;
+            cout << fixed << setprecision(0);  // Muestra sin decimales
+            cout << "Valor unitario: $" << p.valor << endl;
+
+            encontrado = true;
+            break;
+        }
+    }
+
+    archivo.close();
+
+    if (!encontrado) {
+        cout << "Producto no encontrado.\n";
+    }
+}
+
