@@ -25,16 +25,15 @@ El sistema permite gestionar las ventas de una tienda de electrodomésticos util
 ---
 
 ## 📁 Estructura del proyecto
-
 ```plaintext
 📦 ElectroVentasPA1/
-├── 📄 main.cpp             # Lógica principal del programa
-├── 📄 funciones.cpp        # Funciones auxiliares (lectura, escritura, reportes, etc.)
-├── 📄 productos.dat        # Archivo binario con los productos
-├── 📄 ventas.dat           # Archivo binario con las ventas
-├── 📄 README.md            # Este archivo
-├── 📄 .gitignore
-└── 📄 CMakeLists.txt       # (si usas CMake)
+├── .gitignore
+├── CMakeLists.txt
+├── main.cpp
+├── README.md
+├── productos.txt         ✅ (entrada opcional)
+├── clientes.txt          ✅ (entrada opcional)
+
 ```
 
 ## 🧪 Estado del Proyecto
