@@ -19,6 +19,13 @@ struct Venta {
     int cantidadVendida;
     float valorTotal;
 };
+struct Cliente {
+    char tipoId;              // 'C' o 'E'
+    long long documento;      // número de identificación
+    char nombre[30];
+    char apellido[30];
+    char direccion[50];
+};
 
 // Declaración
 void registrarProducto();
@@ -27,7 +34,7 @@ void generarReporte();
 void registrarVenta();
 bool actualizarProducto(const Producto&);
 void cargarProductosDesdeArchivo();
-
+void cargarClientesDesdeArchivo();
 
 int main() {
     int opcion;
@@ -38,9 +45,10 @@ int main() {
         cout << "1. Registrar producto\n";
         cout << "2. Cargar productos desde archivo\n";
         cout << "3. Consultar producto\n";
-        cout << "4. Generar reporte\n";
-        cout << "5. Registrar venta\n";
-        cout << "6. Salir\n";
+        cout << "4. Cargar clientes desde archivo\n";
+        cout << "5. Generar reporte\n";
+        cout << "6. Registrar venta\n";
+        cout << "7. Salir\n";
         cout << "Seleccione una opcion: ";
         cin >> opcion;
 
@@ -55,12 +63,15 @@ int main() {
                 consultarProducto();
                 break;
             case 4:
-                generarReporte();
+                cargarClientesDesdeArchivo();
                 break;
             case 5:
-                registrarVenta();
+                generarReporte();
                 break;
             case 6:
+                registrarVenta();
+                break;
+            case 7:
                 continuar = false;
                 break;
             default:
@@ -305,4 +316,63 @@ void cargarProductosDesdeArchivo() {
 
     cout << "Productos cargados exitosamente desde productos.txt\n";
 }
+void cargarClientesDesdeArchivo() {
+    ifstream archivoTxt("clientes.txt");
+    ofstream archivoBin("clientes.dat", ios::binary | ios::trunc);
 
+    if (!archivoTxt || !archivoBin) {
+        cerr << "Error al abrir clientes.txt o clientes.dat.\n";
+        return;
+    }
+
+    Cliente c;
+    string linea;
+
+    while (getline(archivoTxt, linea)) {
+        cout << "Leyendo: " << linea << endl;  // DEBUG para identificar errores
+
+        size_t pos1 = linea.find(';');
+        size_t pos2 = linea.find(';', pos1 + 1);
+        size_t pos3 = linea.find(';', pos2 + 1);
+        size_t pos4 = linea.find(';', pos3 + 1);
+
+        if (pos1 == string::npos || pos2 == string::npos || pos3 == string::npos || pos4 == string::npos) {
+            cerr << "Linea mal formateada: " << linea << endl;
+            continue;
+        }
+
+        string tipoIdStr = linea.substr(0, pos1);
+        string documentoStr = linea.substr(pos1 + 1, pos2 - pos1 - 1);
+        string nombreStr = linea.substr(pos2 + 1, pos3 - pos2 - 1);
+        string apellidoStr = linea.substr(pos3 + 1, pos4 - pos3 - 1);
+        string direccionStr = linea.substr(pos4 + 1);
+
+        c.tipoId = tipoIdStr.empty() ? ' ' : tipoIdStr[0];  // Prevención si cadena vacía
+
+        try {
+            c.documento = stoll(documentoStr);
+        } catch (const out_of_range& e) {
+            cerr << "Error: documento fuera de rango. Línea: " << linea << endl;
+            continue;
+        } catch (const invalid_argument& e) {
+            cerr << "Error: argumento invalido para documento. Línea: " << linea << endl;
+            continue;
+        }
+
+        strncpy(c.nombre, nombreStr.c_str(), sizeof(c.nombre));
+        c.nombre[sizeof(c.nombre) - 1] = '\0';
+
+        strncpy(c.apellido, apellidoStr.c_str(), sizeof(c.apellido));
+        c.apellido[sizeof(c.apellido) - 1] = '\0';
+
+        strncpy(c.direccion, direccionStr.c_str(), sizeof(c.direccion));
+        c.direccion[sizeof(c.direccion) - 1] = '\0';
+
+        archivoBin.write(reinterpret_cast<char*>(&c), sizeof(Cliente));
+    }
+
+    archivoTxt.close();
+    archivoBin.close();
+
+    cout << "Clientes cargados exitosamente desde clientes.txt\n";
+}
