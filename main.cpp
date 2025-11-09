@@ -1,6 +1,8 @@
 #include <iostream>
 #include <fstream>
 #include <iomanip>
+#include <cstring>
+
 using namespace std;
 
 // Estructura para representar un producto
@@ -18,12 +20,13 @@ struct Venta {
     float valorTotal;
 };
 
-// Declaración del prototipo
+// Declaración
 void registrarProducto();
 void consultarProducto();
 void generarReporte();
 void registrarVenta();
 bool actualizarProducto(const Producto&);
+void cargarProductosDesdeArchivo();
 
 
 int main() {
@@ -33,10 +36,11 @@ int main() {
     while (continuar) {
         cout << "\n--- SISTEMA DE VENTAS ---\n";
         cout << "1. Registrar producto\n";
-        cout << "2. Consultar producto\n";
-        cout << "3. Generar reporte\n";
-        cout << "4. Registrar venta\n";
-        cout << "5. Salir\n";
+        cout << "2. Cargar productos desde archivo\n";
+        cout << "3. Consultar producto\n";
+        cout << "4. Generar reporte\n";
+        cout << "5. Registrar venta\n";
+        cout << "6. Salir\n";
         cout << "Seleccione una opcion: ";
         cin >> opcion;
 
@@ -45,15 +49,18 @@ int main() {
                 registrarProducto();
                 break;
             case 2:
-                consultarProducto();
+                cargarProductosDesdeArchivo();
                 break;
             case 3:
-                generarReporte();
+                consultarProducto();
                 break;
             case 4:
-                registrarVenta();
+                generarReporte();
                 break;
             case 5:
+                registrarVenta();
+                break;
+            case 6:
                 continuar = false;
                 break;
             default:
@@ -134,32 +141,41 @@ void consultarProducto() {
 void generarReporte() {
     Producto p;
     ifstream archivo("productos.dat", ios::binary);
-
-    cout << "\n--- Reporte General de Inventario ---\n";
-
     if (!archivo) {
         cerr << "Error al abrir el archivo de productos.\n";
         return;
     }
 
-    bool hayDatos = false;
+    cout << "\n--- REPORTE DE INVENTARIO ---\n";
+    cout << left << setw(10) << "Codigo"
+         << setw(30) << "Nombre"
+         << setw(12) << "Cantidad"
+         << setw(15) << "Valor Unitario"
+         << setw(15) << "Valor Total" << endl;
+    cout << string(82, '-') << endl;
+
+    int totalProductos = 0;
+    float totalInventario = 0;
 
     while (archivo.read(reinterpret_cast<char*>(&p), sizeof(Producto))) {
-        hayDatos = true;
-        cout << "-----------------------------\n";
-        cout << "Codigo: " << p.codigo << endl;
-        cout << "Nombre: " << p.nombre << endl;
-        cout << "Cantidad: " << p.cantidad << endl;
-        cout << fixed << setprecision(0);
-        cout << "Valor unitario: $" << p.valor << endl;
+        float valorTotal = p.cantidad * p.valor;
+        totalProductos++;
+        totalInventario += valorTotal;
+
+        cout << left << setw(10) << p.codigo
+             << setw(30) << p.nombre
+             << setw(12) << p.cantidad
+             << "$" << setw(14) << fixed << setprecision(0) << p.valor
+             << "$" << setw(14) << fixed << setprecision(2) << valorTotal << endl;
     }
 
     archivo.close();
 
-    if (!hayDatos) {
-        cout << "No hay productos registrados.\n";
-    }
+    cout << string(82, '-') << endl;
+    cout << "Total de productos: " << totalProductos << endl;
+    cout << "Valor total del inventario: $" << fixed << setprecision(2) << totalInventario << endl;
 }
+
 // Reemplaza un producto existente por uno actualizado
 bool actualizarProducto(const Producto& productoActualizado) {
     fstream archivo("productos.dat", ios::in | ios::out | ios::binary);
@@ -247,5 +263,46 @@ void registrarVenta() {
 
     cout << " Venta registrada. Total: $" << fixed << setprecision(2) << v.valorTotal << "\n";
 }
+void cargarProductosDesdeArchivo() {
+    ifstream archivoTxt("productos.txt");
+    ofstream archivoBin("productos.dat", ios::binary | ios::trunc);  // trunc para sobrescribir
 
+    if (!archivoTxt || !archivoBin) {
+        cerr << "Error al abrir productos.txt o productos.dat.\n";
+        return;
+    }
+
+    Producto p;
+    string linea;
+
+    while (getline(archivoTxt, linea)) {
+        // Separar por ";"
+        size_t pos1 = linea.find(';');
+        size_t pos2 = linea.find(';', pos1 + 1);
+        size_t pos3 = linea.find(';', pos2 + 1);
+
+        if (pos1 == string::npos || pos2 == string::npos || pos3 == string::npos) {
+            cerr << "Línea mal formateada: " << linea << endl;
+            continue;
+        }
+
+        string codigoStr = linea.substr(0, pos1);
+        string nombreStr = linea.substr(pos1 + 1, pos2 - pos1 - 1);
+        string valorStr = linea.substr(pos2 + 1, pos3 - pos2 - 1);
+        string cantidadStr = linea.substr(pos3 + 1);
+
+        p.codigo = stoi(codigoStr);
+        strncpy(p.nombre, nombreStr.c_str(), sizeof(p.nombre));
+        p.nombre[sizeof(p.nombre) - 1] = '\0';
+        p.valor = stof(valorStr);
+        p.cantidad = stoi(cantidadStr);
+
+        archivoBin.write(reinterpret_cast<char*>(&p), sizeof(Producto));
+    }
+
+    archivoTxt.close();
+    archivoBin.close();
+
+    cout << "Productos cargados exitosamente desde productos.txt\n";
+}
 
