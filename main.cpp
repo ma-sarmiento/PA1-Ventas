@@ -2,6 +2,8 @@
 #include <fstream>
 #include <iomanip>
 #include <cstring>
+#include <vector>
+#include <algorithm>
 
 using namespace std;
 
@@ -39,6 +41,8 @@ void buscarProductoPorNombre();
 void buscarClientePorNombreApellido();
 void realizarCompra();
 void modificarCompra();
+void imprimirOrdenes();
+void generarReporteVentas();
 
 int main() {
     int opcion;
@@ -53,10 +57,12 @@ int main() {
         cout << "5. Registrar cliente\n";
         cout << "6. Cargar clientes desde archivo\n";
         cout << "7. Buscar cliente por nombre/apellido\n";
-        cout << "8. Generar reporte\n";
-        cout << "9. Realizar Compra\n";
-        cout << "10. Modificar Compra\n";
-        cout << "11. Salir\n";
+        cout << "8. Realizar Compra\n";
+        cout << "9. Modificar Compra\n";
+        cout << "10. Imprimir ordenes\n";
+        cout << "11. Generar reporte\n";
+        cout << "12. Generar reporte de ventas\n";
+        cout << "13. Salir\n";
         cout << "Seleccione una opcion: ";
         cin >> opcion;
 
@@ -83,15 +89,21 @@ int main() {
                 buscarClientePorNombreApellido();
                 break;
             case 8:
-                generarReporte();
-                break;
-            case 9:
                 realizarCompra();
                 break;
-            case 10:
+            case 9:
                 modificarCompra();
                 break;
+            case 10:
+                imprimirOrdenes();
+                break;
             case 11:
+                generarReporte();
+                break;
+            case 12:
+                generarReporteVentas();
+                break;
+            case 13:
                 continuar = false;
                 break;
             default:
@@ -752,4 +764,161 @@ void modificarCompra() {
     if (!ordenEncontrada) {
         cout << "No se encontro ninguna orden con ese numero.\n";
     }
+}
+void imprimirOrdenes() {
+    ifstream archivo("ordenes.dat", ios::binary);
+    if (!archivo) {
+        cerr << "Error al abrir ordenes.dat\n";
+        return;
+    }
+
+    cout << "\n--- LISTADO DE ORDENES REGISTRADAS ---\n";
+
+    while (!archivo.eof()) {
+        int numeroOrden;
+        Cliente cliente;
+        Producto producto;
+        int cantidad;
+        float totalProducto;
+        float totalOrden;
+
+        archivo.read(reinterpret_cast<char*>(&numeroOrden), sizeof(int));
+        if (archivo.eof()) break;
+
+        archivo.read(reinterpret_cast<char*>(&cliente), sizeof(Cliente));
+
+        cout << "\n=====================================\n";
+        cout << "Orden No: " << numeroOrden << endl;
+        cout << "Cliente: " << cliente.nombre << " " << cliente.apellido << endl;
+        cout << "Tipo ID: " << cliente.tipoId << ", Documento: " << cliente.documento << endl;
+        cout << "Direccion: " << cliente.direccion << endl;
+        cout << "-------------------------------------\n";
+        cout << left << setw(10) << "CodProd"
+             << setw(30) << "Nombre"
+             << setw(10) << "Cant"
+             << setw(15) << "Valor Unit"
+             << setw(15) << "Total Prod" << endl;
+
+        // Leer hasta llegar al float totalOrden
+        streampos antesTotal = archivo.tellg();
+        int contador = 0;
+        while (true) {
+            archivo.read(reinterpret_cast<char*>(&producto), sizeof(Producto));
+            archivo.read(reinterpret_cast<char*>(&cantidad), sizeof(int));
+            archivo.read(reinterpret_cast<char*>(&totalProducto), sizeof(float));
+            contador++;
+
+            // Miramos si viene totalOrden a continuación (hacemos peek sin movernos)
+            streampos posibleTotal = archivo.tellg();
+            float posible;
+            archivo.read(reinterpret_cast<char*>(&posible), sizeof(float));
+            if (archivo.eof()) break;
+
+            // Si sí era totalOrden, volvemos y salimos
+            archivo.seekg(posibleTotal);
+            if (contador >= 5) break;  // máximo 5 productos por orden
+
+            // Mostramos producto leído
+            cout << left << setw(10) << producto.codigo
+                 << setw(30) << producto.nombre
+                 << setw(10) << cantidad
+                 << "$" << setw(14) << fixed << setprecision(0) << producto.valor
+                 << "$" << fixed << setprecision(2) << totalProducto << endl;
+        }
+
+        archivo.read(reinterpret_cast<char*>(&totalOrden), sizeof(float));
+        cout << "-------------------------------------\n";
+    }
+
+    archivo.close();
+}
+void generarReporteVentas() {
+    struct VentaResumen {
+        Producto producto;
+        int totalCantidad = 0;
+        float totalVenta = 0;
+    };
+
+    ifstream archivo("ordenes.dat", ios::binary);
+    if (!archivo) {
+        cerr << "Error al abrir ordenes.dat para generar reporte.\n";
+        return;
+    }
+
+    vector<VentaResumen> resumenes;
+
+    while (!archivo.eof()) {
+        int numeroOrden;
+        Cliente cliente;
+        archivo.read(reinterpret_cast<char*>(&numeroOrden), sizeof(int));
+        if (archivo.eof()) break;
+
+        archivo.read(reinterpret_cast<char*>(&cliente), sizeof(Cliente));
+
+        int contador = 0;
+        while (contador < 5) {
+            Producto producto;
+            int cantidad;
+            float totalProducto;
+
+            archivo.read(reinterpret_cast<char*>(&producto), sizeof(Producto));
+            archivo.read(reinterpret_cast<char*>(&cantidad), sizeof(int));
+            archivo.read(reinterpret_cast<char*>(&totalProducto), sizeof(float));
+
+            if (archivo.fail()) break;
+
+            bool encontrado = false;
+            for (auto& r : resumenes) {
+                if (r.producto.codigo == producto.codigo) {
+                    r.totalCantidad += cantidad;
+                    r.totalVenta += totalProducto;
+                    encontrado = true;
+                    break;
+                }
+            }
+
+            if (!encontrado) {
+                VentaResumen nuevo;
+                nuevo.producto = producto;
+                nuevo.totalCantidad = cantidad;
+                nuevo.totalVenta = totalProducto;
+                resumenes.push_back(nuevo);
+            }
+
+            contador++;
+        }
+
+        float totalOrden;
+        archivo.read(reinterpret_cast<char*>(&totalOrden), sizeof(float));
+    }
+
+    archivo.close();
+
+    sort(resumenes.begin(), resumenes.end(), [](const VentaResumen& a, const VentaResumen& b) {
+        return a.totalVenta < b.totalVenta;
+    });
+
+    ofstream reporte("reporte.txt");
+    if (!reporte) {
+        cerr << "Error al crear reporte.txt\n";
+        return;
+    }
+
+    reporte << left << setw(10) << "Codigo"
+            << setw(30) << "Nombre"
+            << setw(15) << "Precio Unitario"
+            << setw(15) << "Cantidad"
+            << setw(15) << "Total Venta" << endl;
+    reporte << string(85, '-') << endl;
+
+    for (const auto& r : resumenes) {
+        reporte << left << setw(10) << r.producto.codigo
+                << setw(30) << r.producto.nombre
+                << "$" << setw(14) << fixed << setprecision(0) << r.producto.valor
+                << setw(15) << r.totalCantidad
+                << "$" << fixed << setprecision(2) << r.totalVenta << endl;
+    }
+
+    reporte.close();
+    cout << "Reporte generado exitosamente en 'reporte.txt'.\n";
 }
