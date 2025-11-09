@@ -31,13 +31,13 @@ struct Cliente {
 void registrarProducto();
 void consultarProducto();
 void generarReporte();
-void registrarVenta();
 bool actualizarProducto(const Producto&);
 void cargarProductosDesdeArchivo();
 void cargarClientesDesdeArchivo();
 void registrarCliente();
 void buscarProductoPorNombre();
 void buscarClientePorNombreApellido();
+void realizarCompra();
 
 int main() {
     int opcion;
@@ -53,7 +53,7 @@ int main() {
         cout << "6. Cargar clientes desde archivo\n";
         cout << "7. Buscar cliente por nombre/apellido\n";
         cout << "8. Generar reporte\n";
-        cout << "9. Registrar venta\n";
+        cout << "9. Realizar Compra\n";
         cout << "10. Salir\n";
         cout << "Seleccione una opcion: ";
         cin >> opcion;
@@ -84,7 +84,7 @@ int main() {
                 generarReporte();
                 break;
             case 9:
-                registrarVenta();
+                realizarCompra();
                 break;
             case 10:
                 continuar = false;
@@ -245,70 +245,136 @@ bool actualizarProducto(const Producto& productoActualizado) {
     archivo.close();
     return false; // No se encontró el producto
 }
-// Función para registrar una venta
-void registrarVenta() {
-    int codigo;
-    int cantidadVenta;
-    Producto p;
-    bool encontrado = false;
+// Función para realizar una compra y registrar una orden de compra
+void realizarCompra() {
+    Cliente cliente;
+    Producto productos[5]; // máximo 5 productos por orden
+    int cantidades[5];
+    int numProductos;
+    int numeroOrden;
+    float totalOrden = 0;
 
-    cout << "\n--- Registrar Venta ---\n";
-    cout << "Ingrese el codigo del producto: ";
-    cin >> codigo;
+    cout << "\n--- REALIZAR COMPRA ---\n";
+    cout << "Numero de orden: ";
+    cin >> numeroOrden;
 
-    // Abrimos archivo para lectura
-    fstream archivo("productos.dat", ios::in | ios::binary);
-    if (!archivo) {
-        cerr << "Error al abrir productos.dat.\n";
+    // Buscar cliente
+    char tipoId;
+    long long documento;
+    cout << "Tipo de identificacion (C/E): ";
+    cin >> tipoId;
+    cout << "Numero de documento: ";
+    cin >> documento;
+
+    bool clienteEncontrado = false;
+    ifstream archivoClientes("clientes.dat", ios::binary);
+    if (!archivoClientes) {
+        cerr << "Error al abrir clientes.dat\n";
         return;
     }
-
-    // Buscar el producto
-    while (archivo.read(reinterpret_cast<char*>(&p), sizeof(Producto))) {
-        if (p.codigo == codigo) {
-            encontrado = true;
+    while (archivoClientes.read(reinterpret_cast<char*>(&cliente), sizeof(Cliente))) {
+        if (cliente.tipoId == tipoId && cliente.documento == documento) {
+            clienteEncontrado = true;
             break;
         }
     }
-    archivo.close();
+    archivoClientes.close();
 
-    if (!encontrado) {
-        cout << "Producto no encontrado.\n";
+    if (!clienteEncontrado) {
+        cout << "Cliente no encontrado.\n";
         return;
     }
 
-    cout << "Cantidad disponible: " << p.cantidad << endl;
-    cout << "Ingrese cantidad a vender: ";
-    cin >> cantidadVenta;
-
-    if (cantidadVenta > p.cantidad) {
-        cout << "No hay suficiente inventario.\n";
+    cout << "Cuantos productos desea comprar? (Maximo 5): ";
+    cin >> numProductos;
+    if (numProductos < 1 || numProductos > 5) {
+        cout << "Numero invalido.\n";
         return;
     }
 
-    // Actualizar inventario
-    p.cantidad -= cantidadVenta;
-    if (!actualizarProducto(p)) {
-        cout << "Error actualizando el producto.\n";
+    for (int i = 0; i < numProductos; ++i) {
+        int codigo;
+        cout << "\nProducto " << (i+1) << ":\n";
+        cout << "Codigo: ";
+        cin >> codigo;
+        cout << "Cantidad a comprar: ";
+        cin >> cantidades[i];
+
+        bool productoEncontrado = false;
+        ifstream archivoProductos("productos.dat", ios::binary);
+        if (!archivoProductos) {
+            cerr << "Error al abrir productos.dat\n";
+            return;
+        }
+        Producto temp;
+        while (archivoProductos.read(reinterpret_cast<char*>(&temp), sizeof(Producto))) {
+            if (temp.codigo == codigo) {
+                productos[i] = temp;
+                productoEncontrado = true;
+                break;
+            }
+        }
+        archivoProductos.close();
+
+        if (!productoEncontrado) {
+            cout << "Producto no encontrado.\n";
+            return;
+        }
+
+        // Verificar inventario
+        if (cantidades[i] > productos[i].cantidad) {
+            cout << "No hay suficiente inventario para el producto " << productos[i].nombre << ".\n";
+            return;
+        }
+    }
+
+    // Calcular total y registrar
+    ofstream archivoOrdenes("ordenes.dat", ios::binary | ios::app);
+    if (!archivoOrdenes) {
+        cerr << "Error al abrir ordenes.dat\n";
         return;
     }
 
-    // Registrar venta en archivo ventas.dat
-    Venta v;
-    v.codigoProducto = p.codigo;
-    v.cantidadVendida = cantidadVenta;
-    v.valorTotal = cantidadVenta * p.valor;
+    archivoOrdenes.write(reinterpret_cast<char*>(&numeroOrden), sizeof(int));
+    archivoOrdenes.write(reinterpret_cast<char*>(&cliente), sizeof(Cliente));
 
-    ofstream ventasFile("ventas.dat", ios::binary | ios::app);
-    if (!ventasFile) {
-        cerr << "Error al abrir ventas.dat.\n";
-        return;
+    for (int i = 0; i < numProductos; ++i) {
+        float subtotal = productos[i].valor * cantidades[i];
+        float descuento = 0;
+        float seguro = 0;
+        float iva = 0.19f * productos[i].valor * cantidades[i];
+
+        // Política 1: Seguro obligatorio
+        if (productos[i].valor >= 500000 && productos[i].valor <= 1000000) seguro = 30000;
+        else if (productos[i].valor <= 5000000) seguro = 120000;
+        else seguro = 170000;
+
+        seguro *= cantidades[i];
+
+        // Política 2: Descuento por cantidad
+        if (cantidades[i] >= 6 && cantidades[i] <= 10) descuento = 0.05f;
+        else if (cantidades[i] >= 11 && cantidades[i] <= 15) descuento = 0.10f;
+        else if (cantidades[i] > 15) descuento = 0.15f;
+        subtotal -= subtotal * descuento;
+
+        // Política 3: Reducción IVA si es extranjero y aplica condición
+        if (cliente.tipoId == 'E' && productos[i].valor <= 2000000 && cantidades[i] < 5) {
+            iva = 0;
+        }
+
+        float total = subtotal + seguro + iva;
+        totalOrden += total;
+
+        // Guardar info de producto comprado
+        archivoOrdenes.write(reinterpret_cast<char*>(&productos[i]), sizeof(Producto));
+        archivoOrdenes.write(reinterpret_cast<char*>(&cantidades[i]), sizeof(int));
+        archivoOrdenes.write(reinterpret_cast<char*>(&total), sizeof(float));
     }
 
-    ventasFile.write(reinterpret_cast<char*>(&v), sizeof(Venta));
-    ventasFile.close();
+    archivoOrdenes.write(reinterpret_cast<char*>(&totalOrden), sizeof(float));
+    archivoOrdenes.close();
 
-    cout << " Venta registrada. Total: $" << fixed << setprecision(2) << v.valorTotal << "\n";
+    cout << "\n Orden registrada exitosamente. Total a pagar: $" << fixed << setprecision(2) << totalOrden << endl;
 }
 void cargarProductosDesdeArchivo() {
     ifstream archivoTxt("productos.txt");
