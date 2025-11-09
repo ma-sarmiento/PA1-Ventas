@@ -21,6 +21,7 @@ struct Venta {
 // Declaración del prototipo
 void registrarProducto();
 void consultarProducto();
+void generarReporte();
 
 int main() {
     int opcion;
@@ -44,7 +45,7 @@ int main() {
                 consultarProducto();
                 break;
             case 3:
-                // generarReporte();
+                generarReporte();
                 break;
             case 4:
                 // registrarVenta();
@@ -126,4 +127,36 @@ void consultarProducto() {
         cout << "Producto no encontrado.\n";
     }
 }
+#include <iomanip> // Ya deberías tener esto
+
+void generarReporte() {
+    Producto p;
+    ifstream archivo("productos.dat", ios::binary);
+
+    cout << "\n--- Reporte General de Inventario ---\n";
+
+    if (!archivo) {
+        cerr << "Error al abrir el archivo de productos.\n";
+        return;
+    }
+
+    bool hayDatos = false;
+
+    while (archivo.read(reinterpret_cast<char*>(&p), sizeof(Producto))) {
+        hayDatos = true;
+        cout << "-----------------------------\n";
+        cout << "Codigo: " << p.codigo << endl;
+        cout << "Nombre: " << p.nombre << endl;
+        cout << "Cantidad: " << p.cantidad << endl;
+        cout << fixed << setprecision(0);
+        cout << "Valor unitario: $" << p.valor << endl;
+    }
+
+    archivo.close();
+
+    if (!hayDatos) {
+        cout << "No hay productos registrados.\n";
+    }
+}
+
 
